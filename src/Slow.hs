@@ -5,6 +5,7 @@
 module Slow
     ( quicksortList
     , quicksortListPar
+    , pQuicksort
     , quicksortUArray
     ) where
 
@@ -45,6 +46,7 @@ pQuicksort n (x:xs) =
       l = pQuicksort (n `div` 2) lower
       u = [x] ++ pQuicksort (n `div` 2) upper
   in (par u l) ++ u
+{-# INLINE pQuicksort #-}
 
 
 quicksortUArray :: UArray Int Int -> UArray Int Int

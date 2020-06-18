@@ -6,8 +6,6 @@
 module Lib
     ( quicksortVector
     , quicksortAlgorithms
-    , quicksortArray
-    , quicksortArrayS
     , quicksortPrimArray
     , quicksortC
     , module Slow
@@ -17,7 +15,6 @@ import Control.Monad
 import Control.Monad.ST
 import Data.Int
 import Data.Massiv.Array as A
-import Data.Massiv.Array.Unsafe as A
 import Data.Primitive.PrimArray
 import qualified Data.Vector.Algorithms.Intro as Intro
 import qualified Data.Vector.Generic as V
@@ -27,7 +24,6 @@ import qualified Data.Vector.Storable.Mutable as VSM
 import Foreign.C.Types
 import Foreign.Ptr
 import System.IO.Unsafe
-import Control.Scheduler
 
 import Slow
 
@@ -100,116 +96,116 @@ quicksortMutablePrimArray marr
       | otherwise = pure ()
 {-# INLINE quicksortMutablePrimArray #-}
 
-quicksortArrayS ::
-     (Mutable r Ix1 e, Ord e) => Array r Ix1 e -> Array r Ix1 e
-quicksortArrayS arr = withMArrayST arr quicksortMArrayS
-{-# INLINE quicksortArrayS #-}
+-- quicksortArrayS ::
+--      (Mutable r Ix1 e, Ord e) => Array r Ix1 e -> Array r Ix1 e
+-- quicksortArrayS arr = withMArrayST arr quicksortMArrayS
+-- {-# INLINE quicksortArrayS #-}
 
-quicksortMArrayS ::
-     (Ord e, Mutable r Ix1 e, PrimMonad m) => A.MArray (PrimState m) r Ix1 e -> m ()
-quicksortMArrayS marr = qsort 0 (unSz (msize marr) - 1)
-  where
-    leSwap i j = do
-      ei <- A.unsafeRead marr i
-      ej <- A.unsafeRead marr j
-      if ei < ej
-        then do
-          A.unsafeWrite marr i ej
-          A.unsafeWrite marr j ei
-          pure ei
-        else pure ej
-    {-# INLINE leSwap #-}
-    getPivot lo hi = do
-      let !mid = (hi + lo) `div` 2
-      _ <- leSwap mid lo
-      _ <- leSwap hi lo
-      leSwap mid hi
-    {-# INLINE getPivot #-}
-    qsort !lo !hi =
-      when (lo < hi) $ do
-        p <- getPivot lo hi
-        l <- unstablePartitionRegionM marr (< p) lo hi
-        h <- unstablePartitionRegionM marr (== p) l hi
-        qsort lo (l - 1)
-        qsort h hi
-{-# INLINE quicksortMArrayS #-}
+-- quicksortMArrayS ::
+--      (Ord e, Mutable r Ix1 e, PrimMonad m) => A.MArray (PrimState m) r Ix1 e -> m ()
+-- quicksortMArrayS marr = qsort 0 (unSz (msize marr) - 1)
+--   where
+--     leSwap i j = do
+--       ei <- A.unsafeRead marr i
+--       ej <- A.unsafeRead marr j
+--       if ei < ej
+--         then do
+--           A.unsafeWrite marr i ej
+--           A.unsafeWrite marr j ei
+--           pure ei
+--         else pure ej
+--     {-# INLINE leSwap #-}
+--     getPivot lo hi = do
+--       let !mid = (hi + lo) `div` 2
+--       _ <- leSwap mid lo
+--       _ <- leSwap hi lo
+--       leSwap mid hi
+--     {-# INLINE getPivot #-}
+--     qsort !lo !hi =
+--       when (lo < hi) $ do
+--         p <- getPivot lo hi
+--         l <- unstablePartitionRegionM marr (< p) lo (hi - 1)
+--         h <- unstablePartitionRegionM marr (== p) l hi
+--         qsort lo (l - 1)
+--         qsort h hi
+-- {-# INLINE quicksortMArrayS #-}
 
-unstablePartitionRegionM ::
-     forall r e m. (Mutable r Ix1 e, PrimMonad m)
-  => MArray (PrimState m) r Ix1 e
-  -> (e -> Bool)
-  -> Ix1 -- ^ Start index of the region
-  -> Ix1 -- ^ End index of the region
-  -> m Ix1
-unstablePartitionRegionM marr f start end = fromLeft start (end + 1)
-  where
-    fromLeft i j
-      | i == j = pure i
-      | otherwise = do
-        x <- A.unsafeRead marr i
-        if f x
-          then fromLeft (i + 1) j
-          else fromRight i (j - 1)
-    fromRight i j
-      | i == j = pure i
-      | otherwise = do
-        x <- A.unsafeRead marr j
-        if f x
-          then do
-            A.unsafeWrite marr j =<< A.unsafeRead marr i
-            A.unsafeWrite marr i x
-            fromLeft (i + 1) j
-          else fromRight i (j - 1)
-{-# INLINE unstablePartitionRegionM #-}
+-- unstablePartitionRegionM ::
+--      forall r e m. (Mutable r Ix1 e, PrimMonad m)
+--   => MArray (PrimState m) r Ix1 e
+--   -> (e -> Bool)
+--   -> Ix1 -- ^ Start index of the region
+--   -> Ix1 -- ^ End index of the region
+--   -> m Ix1
+-- unstablePartitionRegionM marr f start end = fromLeft start (end + 1)
+--   where
+--     fromLeft i j
+--       | i == j = pure i
+--       | otherwise = do
+--         x <- A.unsafeRead marr i
+--         if f x
+--           then fromLeft (i + 1) j
+--           else fromRight i (j - 1)
+--     fromRight i j
+--       | i == j = pure i
+--       | otherwise = do
+--         x <- A.unsafeRead marr j
+--         if f x
+--           then do
+--             A.unsafeWrite marr j =<< A.unsafeRead marr i
+--             A.unsafeWrite marr i x
+--             fromLeft (i + 1) j
+--           else fromRight i (j - 1)
+-- {-# INLINE unstablePartitionRegionM #-}
 
-quicksortArray ::
-     (Mutable r Ix1 e, Ord e) => Array r Ix1 e -> Array r Ix1 e
-quicksortArray arr =
-  unsafePerformIO $
-  withMArray
-    arr
-    (\n s ->
-       quicksortMArray (trivialScheduler_ {numWorkers = n, scheduleWork = s}))
-{-# INLINE quicksortArray #-}
+-- quicksortArray ::
+--      (Mutable r Ix1 e, Ord e) => Array r Ix1 e -> Array r Ix1 e
+-- quicksortArray arr =
+--   unsafePerformIO $
+--   withMArray
+--     arr
+--     (\n s ->
+--        quicksortMArray (trivialScheduler_ {numWorkers = n, scheduleWork = s}))
+-- {-# INLINE quicksortArray #-}
 
-quicksortMArray ::
-     (Ord e, Mutable r Ix1 e, PrimMonad m)
-  => Scheduler m ()
-  -> A.MArray (PrimState m) r Ix1 e
-  -> m ()
-quicksortMArray scheduler marr =
-  scheduleWork scheduler $ qsort (numWorkers scheduler) 0 (unSz (msize marr) - 1)
-  where
-    leSwap i j = do
-      ei <- A.unsafeRead marr i
-      ej <- A.unsafeRead marr j
-      if ei < ej
-        then do
-          A.unsafeWrite marr i ej
-          A.unsafeWrite marr j ei
-          pure ei
-        else pure ej
-    {-# INLINE leSwap #-}
-    getPivot lo hi = do
-      let !mid = (hi + lo) `div` 2
-      _ <- leSwap mid lo
-      _ <- leSwap hi lo
-      leSwap mid hi
-    {-# INLINE getPivot #-}
-    qsort !n !lo !hi =
-      when (lo < hi) $ do
-        p <- getPivot lo hi
-        l <- unstablePartitionRegionM marr (< p) lo hi
-        h <- unstablePartitionRegionM marr (== p) l hi
-        if n > 0
-          then do
-            let !n' = n - 1
-            scheduleWork scheduler $ qsort n' lo (l - 1)
-            scheduleWork scheduler $ qsort n' h hi
-          else do
-            qsort n lo (l - 1)
-            qsort n h hi
-{-# INLINE quicksortMArray #-}
+-- quicksortMArray ::
+--      (Ord e, Mutable r Ix1 e, PrimMonad m)
+--   => Scheduler m ()
+--   -> A.MArray (PrimState m) r Ix1 e
+--   -> m ()
+-- quicksortMArray scheduler marr =
+--   scheduleWork scheduler $ qsort (numWorkers scheduler) 0 (unSz (msize marr) - 1)
+--   where
+--     leSwap i j = do
+--       ei <- A.unsafeRead marr i
+--       ej <- A.unsafeRead marr j
+--       if ei < ej
+--         then do
+--           A.unsafeWrite marr i ej
+--           A.unsafeWrite marr j ei
+--           pure ei
+--         else pure ej
+--     {-# INLINE leSwap #-}
+--     getPivot lo hi = do
+--       let !mid = (hi + lo) `div` 2
+--       _ <- leSwap mid lo
+--       _ <- leSwap hi lo
+--       leSwap mid hi
+--     {-# INLINE getPivot #-}
+--     qsort !n !lo !hi =
+--       when (lo < hi) $ do
+--         p <- getPivot lo hi
+--         l <- unstablePartitionRegionM marr (< p) lo hi
+--         h <- unstablePartitionRegionM marr (== p) l hi
+--         if n > 0
+--           then do
+--             let !n' = n - 1
+--             scheduleWork scheduler $ qsort n' lo (l - 1)
+--             scheduleWork scheduler $ qsort n' h hi
+--           else do
+--             qsort n lo (l - 1)
+--             qsort n h hi
+-- {-# INLINE quicksortMArray #-}
 
 
 quicksortC :: VS.Vector CLong -> VS.Vector CLong

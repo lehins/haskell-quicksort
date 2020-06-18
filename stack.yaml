@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-12.26
+resolver: lts-16.1
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -62,8 +62,8 @@ packages:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
-extra-deps:
-- scheduler-1.1.0@sha256:6d16a793b18fc3cbeb32767370d4960260afc9ecbf8f967000e2718c288d5f76
-- primitive-0.6.4.0@sha256:5b6a2c3cc70a35aabd4565fcb9bb1dd78fe2814a36e62428a9a1aae8c32441a1,2079
-- massiv-0.3.1.0@sha256:7377aa7a1b7d32e7e8aa8494267390829936477ed353a7d0dd5f0458ae887898
+extra-deps: []
+#- scheduler-1.1.0@sha256:6d16a793b18fc3cbeb32767370d4960260afc9ecbf8f967000e2718c288d5f76
+#- primitive-0.6.4.0@sha256:5b6a2c3cc70a35aabd4565fcb9bb1dd78fe2814a36e62428a9a1aae8c32441a1,2079
+#- massiv-0.3.1.0@sha256:7377aa7a1b7d32e7e8aa8494267390829936477ed353a7d0dd5f0458ae887898
 
