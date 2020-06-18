@@ -8,11 +8,12 @@ import Criterion.Main
 import Data.Coerce
 import Data.Massiv.Array as A
 import Data.Primitive.PrimArray
+import qualified Data.Primitive.Sort as PA
 -- import Data.Array.MArray as MA
 -- import Data.Array.IO
 import Data.Array.Unboxed (UArray)
 import Data.Int
-import qualified Data.Vector.Storable as V
+import qualified Data.Vector.Primitive as V
 import Foreign.C.Types (CLong(..))
 import qualified GHC.Exts as IsList (fromList)
 import Lib
@@ -60,7 +61,7 @@ main = do
         , mkGroupList n "replicated" xsReplicated
         ]
     , bgroup
-        "Vector" -- Use a more appropriate data structure
+        "Array" -- Use a more appropriate data structure
         [ mkGroup n "random" xsRandom
         , mkGroup n "sorted" xsSorted
         , mkGroup n "reversed sorted" xsReversed
@@ -97,9 +98,11 @@ mkGroup n name xs =
   bgroup
     name
     [ env (pure (A.fromList Seq xs :: Array S Ix1 Int64)) $ \v ->
-        bench "Array Seq" $ nf A.quicksort v
+        bench "massiv/Array Seq (quicksort)" $ nf A.quicksort v
     , env (pure (A.fromList Par xs :: Array S Ix1 Int64)) $ \v ->
-        bench "Array Par" $ nf A.quicksort v
+        bench "massiv/Array Par (quicksort)" $ nf A.quicksort v
+    , env (pure $ primArrayFromList xs) $ \v ->
+        bench "primitive-sort/PrimArray Par (insertion sort)" $ nf PA.sort v
     , env (pure $ V.fromList xs) $ \v ->
-        bench "Vector Algorithms" $ nf quicksortAlgorithms v
+        bench "vector-algorithms/Vector (intro sort)" $ nf quicksortAlgorithms v
     ]
