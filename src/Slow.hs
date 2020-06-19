@@ -7,6 +7,7 @@ module Slow
     , quicksortListPar
     , pQuicksort
     , quicksortUArray
+    , psortList
     ) where
 
 import Control.Monad
@@ -30,7 +31,7 @@ quicksortList = go
 
 
 quicksortListPar :: Ord a => [a] -> [a]
-quicksortListPar xs = pQuicksort 8 xs -- 8 is the number of sparks used to sort
+quicksortListPar xs = psortList 8 xs -- 8 is the number of sparks used to sort
 {-# INLINE quicksortListPar #-}
 
 -- pQuicksort, parallelQuicksort
@@ -46,8 +47,15 @@ pQuicksort n (x:xs) =
       l = pQuicksort (n `div` 2) lower
       u = [x] ++ pQuicksort (n `div` 2) upper
   in (par u l) ++ u
-{-# INLINE pQuicksort #-}
 
+-- | SO Answer
+-- https://stackoverflow.com/questions/19752983/is-it-possible-to-speed-up-a-quicksort-with-par-in-haskell/55894549#55894549
+psortList :: Ord a => Int -> [a] -> [a]
+psortList n (x:xs)
+  = let a = psortList (n-1) $ filter (<=x) xs
+        b = psortList (n-1) $ filter (>x)  xs
+    in if n > 0 then b `par` a ++ x:b else a ++ x:b
+psortList _ [] = []
 
 quicksortUArray :: UArray Int Int -> UArray Int Int
 quicksortUArray arr = unsafePerformIO $ do

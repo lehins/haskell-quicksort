@@ -14,6 +14,7 @@ import qualified Data.Primitive.Sort as PA
 import Data.Array.Unboxed (UArray)
 import Data.Int
 import qualified Data.Vector.Primitive as V
+import qualified Data.Vector.Storable as VS
 import Foreign.C.Types (CLong(..))
 import qualified GHC.Exts as IsList (fromList)
 import Lib
@@ -61,11 +62,18 @@ main = do
         , mkGroupList n "replicated" xsReplicated
         ]
     , bgroup
+        "FromList" -- start with the list, but produce some sorted structure
+        [ mkGroupList n "random" xsRandom
+        , mkGroupList n "sorted" xsSorted
+        , mkGroupList n "reversed sorted" xsReversed
+        , mkGroupList n "replicated" xsReplicated
+        ]
+    , bgroup
         "Array" -- Use a more appropriate data structure
-        [ mkGroup n "random" xsRandom
-        , mkGroup n "sorted" xsSorted
-        , mkGroup n "reversed sorted" xsReversed
-        , mkGroup n "replicated" xsReplicated
+        [ mkGroup "random" xsRandom
+        , mkGroup "sorted" xsSorted
+        , mkGroup "reversed sorted" xsReversed
+        , mkGroup "replicated" xsReplicated
         ]
     ]
 
@@ -73,7 +81,8 @@ mkGroupList :: Int -> String -> [Int64] -> Benchmark
 mkGroupList n name xs =
   bgroup
     name
-    [ env (pure xs) $ \v ->
+    [ env (pure xs) $ \v -> bench "List Par" $ nf (psortList n) v
+    , env (pure xs) $ \v ->
         bench "Array Seq" $
         nf
           (A.toList .
@@ -92,9 +101,25 @@ mkGroupList n name xs =
     , env (pure xs) $ \v -> bench "Map Par" $ nf (pSort n) v
     ]
 
+mkGroupFromList :: Int -> String -> [Int64] -> Benchmark
+mkGroupFromList n name xs =
+  bgroup
+    name
+    [ env (pure xs) $ \v -> bench "List Par" $ nf (psortList n) v
+    , env (pure xs) $ \v ->
+        bench "Array Seq" $
+        nf (A.quicksort . (A.fromList Seq :: [Int64] -> Array S Ix1 Int64)) v
+    , env (pure xs) $ \v ->
+        bench "Array Par" $
+        nf (A.quicksort . (A.fromList Par :: [Int64] -> Array S Ix1 Int64)) v
+    , env (pure xs) $ \v ->
+        bench "Vector Algorithms" $ nf (quicksortAlgorithms . V.fromList) v
+    , env (pure xs) $ \v -> bench "Map Par" $ nf (parBags n) v
+    ]
 
-mkGroup :: Int -> String -> [Int64] -> Benchmark
-mkGroup n name xs =
+
+mkGroup :: String -> [Int64] -> Benchmark
+mkGroup name xs =
   bgroup
     name
     [ env (pure (A.fromList Seq xs :: Array S Ix1 Int64)) $ \v ->
@@ -105,4 +130,7 @@ mkGroup n name xs =
         bench "primitive-sort/PrimArray Par (insertion sort)" $ nf PA.sort v
     , env (pure $ V.fromList xs) $ \v ->
         bench "vector-algorithms/Vector (intro sort)" $ nf quicksortAlgorithms v
+    -- , env (pure $ VS.fromList xs) $ \v ->
+    --     bench "C/Vector (quicksort)" $ nf quicksortC v
+    --  too slow on sorted.
     ]

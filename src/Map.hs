@@ -49,6 +49,7 @@ parMergeBags_ q = parMergeBags_ =<< go q where
 
 
 
+
 parUnionWith
   :: Ord k
   => (v -> v -> v)
@@ -120,13 +121,13 @@ parToListPlus _ Tip lst = pure lst
 parToListPlus n (Bin _ x c l r) lst = do
   r' <- parEval $ parToListPlus (n `quot` 2) r lst
   res <- parToListPlus (n `quot` 2) l $ replicate c x ++ r'
-  rseq r' -- make sure the right side is finished
+  _ <- rseq r' -- make sure the right side is finished
   pure res
 {-# INLINE parToListPlus #-}
 
 
--- parMerge :: Ord a => Int -> [[a]] -> Eval [a]
--- parMerge n xs = do
---   bags <- parMakeBags xs
---   m <- parMergeBags 2 bags
---   parToListPlus n m []
+parBags :: Ord a => Int -> [a] -> Bag a
+parBags n xs = runEval $ do
+  bags <- parMakeBags $ splatter n xs
+  parMergeBags_ bags
+{-# INLINE parBags #-}

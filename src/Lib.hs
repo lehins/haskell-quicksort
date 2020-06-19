@@ -21,7 +21,6 @@ import qualified Data.Vector.Generic as V
 import qualified Data.Vector.Generic.Mutable as VM
 import qualified Data.Vector.Storable as VS
 import qualified Data.Vector.Storable.Mutable as VSM
-import Foreign.C.Types
 import Foreign.Ptr
 import System.IO.Unsafe
 
@@ -208,13 +207,13 @@ quicksortMutablePrimArray marr
 -- {-# INLINE quicksortMArray #-}
 
 
-quicksortC :: VS.Vector CLong -> VS.Vector CLong
+quicksortC :: VS.Vector Int64 -> VS.Vector Int64
 quicksortC v = unsafePerformIO $ do
   mv <- VS.thaw v
-  VSM.unsafeWith mv (\ptr -> c_qsort ptr 0 (fromIntegral (VS.length v - 1)))
+  VSM.unsafeWith mv (\ptr -> c_qsort ptr 0 (VS.length v - 1))
   VS.unsafeFreeze mv
 {-# INLINE quicksortC #-}
 
 
 foreign import ccall unsafe "qsort.c qsort"
-  c_qsort :: Ptr CLong -> CLong -> CLong -> IO ()
+  c_qsort :: Ptr Int64 -> Int -> Int -> IO ()
